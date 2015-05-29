@@ -1,1 +1,1 @@
-time for i in {1..100}; do java -jar BatchBpropNeuralNetwork.jar > /dev/null && echo $i OK; done | wc -l
+time for i in {1..100}; do java -jar BackPropagationNeuralNetwork.jar > /dev/null && echo $i OK; done | wc -l
