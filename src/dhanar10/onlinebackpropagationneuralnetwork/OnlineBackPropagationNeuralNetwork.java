@@ -1,4 +1,4 @@
-package dhanar10.OnlineBackPropagationNeuralNetwork;
+package dhanar10.onlinebackpropagationneuralnetwork;
 
 public class OnlineBackPropagationNeuralNetwork {
 	public static final int HIDDEN_NEURON = 4;
