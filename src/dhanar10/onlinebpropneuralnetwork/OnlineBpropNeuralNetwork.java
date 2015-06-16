@@ -1,6 +1,6 @@
 package dhanar10.onlinebpropneuralnetwork;
 
-public class OnlineBackPropagationNeuralNetwork {
+public class OnlineBpropNeuralNetwork {
 	private double mse = 0;
 	
 	private double yInput[];
@@ -13,7 +13,7 @@ public class OnlineBackPropagationNeuralNetwork {
 	public static void main(String[] args) {
 		double data[][] = {{0, 0, 0}, {0, 1, 1}, {1, 0, 1}, {1, 1, 0}}; // XOR
 		
-		OnlineBackPropagationNeuralNetwork bprop = new OnlineBackPropagationNeuralNetwork(2, 4, 1);
+		OnlineBpropNeuralNetwork bprop = new OnlineBpropNeuralNetwork(2, 4, 1);
 		boolean success = bprop.train(data, 0.7, 0.001, 10000);
 		
 		System.out.println();
@@ -35,7 +35,7 @@ public class OnlineBackPropagationNeuralNetwork {
 		System.exit(success ? 0 : 1);
 	}
 	
-	public OnlineBackPropagationNeuralNetwork(int input, int hidden, int output) {
+	public OnlineBpropNeuralNetwork(int input, int hidden, int output) {
 		yInput = new double[input];
 		yHidden = new double[hidden];
 		yOutput = new double[output];
