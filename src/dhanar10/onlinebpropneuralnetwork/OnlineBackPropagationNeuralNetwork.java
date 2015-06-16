@@ -1,24 +1,53 @@
 package dhanar10.onlinebpropneuralnetwork;
 
 public class OnlineBackPropagationNeuralNetwork {
-	public static final int HIDDEN_NEURON = 4;
-	public static final double LEARNING_RATE = 0.7;
-	public static final double TARGET_MSE = 0.001;
-	public static final int MAX_EPOCH = 10000;
+	private double mse = 0;
+	
+	private double yInput[];
+	private double yHidden[];
+	private double yOutput[];
+	
+	private double wInputHidden[][];
+	private double wHiddenOutput[][];
 
 	public static void main(String[] args) {
-		int status = 0;
+		double data[][] = {{0, 0, 0}, {0, 1, 1}, {1, 0, 1}, {1, 1, 0}}; // XOR
 		
-		double yInput[] = new double[2];
-		double yHidden[] = new double[HIDDEN_NEURON];
-		double yOutput = 0;
+		OnlineBackPropagationNeuralNetwork bprop = new OnlineBackPropagationNeuralNetwork(2, 4, 1);
+		boolean success = bprop.train(data, 0.7, 0.001, 10000);
 		
-		double wInputHidden[][] = new double[2][HIDDEN_NEURON];
-		double wHiddenOutput[] = new double[HIDDEN_NEURON];
+		System.out.println();
+		
+		for (int i = 0; i < data.length; i++) {
+			double output[] = bprop.compute(data[i]);
+			
+			for (int j = 0; j < data[i].length - output.length; j++) {
+				System.out.printf("%.2f%s", data[i][j], "\t");
+			}
+			
+			for (int j = 0; j < output.length; j++) {
+				System.out.printf("%.2f%s", output[j], j + 1 != output.length ? "\t" : "");
+			}
+			
+			System.out.println();
+		}
+		
+		System.exit(success ? 0 : 1);
+	}
+	
+	public OnlineBackPropagationNeuralNetwork(int input, int hidden, int output) {
+		yInput = new double[input];
+		yHidden = new double[hidden];
+		yOutput = new double[output];
+		
+		wInputHidden = new double[input][hidden];
+		wHiddenOutput = new double[hidden][output];
+	}
+	
+	public boolean train(double data[][], double learningRate, double targetMse, double maxEpoch) {
+		boolean success = true;
 		
 		int epoch = 0;
-		
-		double dTraining[][] = {{0, 0, 0}, {0, 1, 1}, {1, 0, 1}, {1, 1, 0}}; // XOR
 		
 		for (int i = 0; i < wInputHidden.length; i++) {
 			for (int j = 0; j < wInputHidden[0].length; j++) {
@@ -27,105 +56,116 @@ public class OnlineBackPropagationNeuralNetwork {
 		}
 		
 		for (int i = 0; i < wHiddenOutput.length; i++) {
-			wHiddenOutput[i] = Math.random();
+			for (int j = 0; j < wHiddenOutput[0].length; j++) {
+				wHiddenOutput[i][j] = Math.random();
+			}
 		}
 		
 		while (true) {
-			double mse = 0;
-			
-			double yTarget = 0;
-			
-			double eHidden[] = new double[HIDDEN_NEURON];
-			double eOutput = 0;
-			
 			epoch++;
 			
-			for (int i = 0; i < dTraining.length; i++) {
-				for (int j = 0; j < yInput.length; j++) {
-					yInput[j] = dTraining[i][j];
-				}
+			mse = 0;
+			
+			for (double[] d : data) {
+				double yTarget[] = new double[yOutput.length];
 				
-				yTarget = dTraining[i][dTraining[i].length - 1];
+				double eHidden[] = new double[yHidden.length];
+				double eOutput[] = new double[yOutput.length];
 				
-				for (int j = 0; j < yHidden.length; j++) {
-					yHidden[j] = 0;
-					
-					for (int k = 0; k < yInput.length; k++) {
-						yHidden[j] += yInput[k] * wInputHidden[k][j];
+				for (int i = 0; i < d.length; i++) {
+					if (i < yInput.length) {
+						yInput[i] = d[i];
 					}
-					
-					yHidden[j] = 1 / (1 + Math.pow(Math.E, -yHidden[j]));
-				}
-				
-				yOutput = 0;
-				
-				for (int j = 0; j < yHidden.length; j++) {
-					yOutput += yHidden[j] * wHiddenOutput[j];
-				}
-				
-				yOutput = 1 / (1 + Math.pow(Math.E, -yOutput));
-				
-				eOutput = (yTarget - yOutput) * yOutput * (1 - yOutput);
-				
-				for (int j = 0; j < yHidden.length; j++) {
-					eHidden[j] = eOutput * wHiddenOutput[j] * yHidden[j] * (1 - yHidden[j]);
-				}
-				
-				for (int j = 0; j < yHidden.length; j++) {
-					for (int k = 0; k < yInput.length; k++) {
-						wInputHidden[k][j] += LEARNING_RATE * eHidden[j] * yInput[k];
+					else {
+						yTarget[i - yInput.length] = d[i];
 					}
 				}
 				
-				for (int j = 0; j < yHidden.length; j++) {
-					wHiddenOutput[j]  += LEARNING_RATE * eOutput * yHidden[j];
+				this.compute(yInput);
+				
+				for (int i = 0; i < yOutput.length; i++) {
+					eOutput[i] = (yTarget[i] - yOutput[i]) * dsigmoid(yOutput[i]);
 				}
 				
-				mse += Math.pow(yTarget - yOutput, 2);
+				for (int i = 0; i < yHidden.length; i++) {
+					for (int j = 0; j < yOutput.length; j++) {
+						eHidden[i] += eOutput[j] * wHiddenOutput[i][j];
+					}
+					
+					eHidden[i] *= dsigmoid(yHidden[i]);
+				}
+				
+				for (int j = 0; j < yHidden.length; j++) {
+					for (int k = 0; k < yInput.length; k++) {
+						wInputHidden[k][j] += learningRate * eHidden[j] * yInput[k];
+					}
+				}
+				
+				for (int j = 0; j < yOutput.length; j++) {
+					for (int k = 0; k < yHidden.length; k++) {
+						wHiddenOutput[k][j] += learningRate * eOutput[j] * yHidden[k];
+					}
+				}
+				
+				for (int j = 0; j < yOutput.length; j++) {
+					mse += Math.pow(yTarget[j] - yOutput[j], 2);
+				}
 			}
 			
-			mse /= dTraining.length;
+			mse /= data.length * data[0].length;
 			
 			System.out.println(epoch + "\t" + mse);
 			
-			if (mse < TARGET_MSE) {
+			if (mse < targetMse) {
 				break;
 			}
 			
-			if (epoch == MAX_EPOCH) {
-				status = 1;
+			if (epoch == maxEpoch) {
+				success = false;;
 				break;
 			}
 		}
 		
-		System.out.println();
+		return success;
+	}
+	
+	public double[] compute(double input[]) {
+		for (int i = 0; i < yInput.length; i++) {
+			yInput[i] = input[i];
+		}
 		
-		for (int i = 0; i < dTraining.length; i++) {
+		for (int i = 0; i < yHidden.length; i++) {
+			yHidden[i] = 0;
+			
 			for (int j = 0; j < yInput.length; j++) {
-				yInput[j] = dTraining[i][j];
+				yHidden[i] += yInput[j] * wInputHidden[j][i];
 			}
 			
-			for (int j = 0; j < yHidden.length; j++) {
-				yHidden[j] = 0;
-				
-				for (int k = 0; k < yInput.length; k++) {
-					yHidden[j] += yInput[k] * wInputHidden[k][j];
-				}
-				
-				yHidden[j] = 1 / (1 + Math.pow(Math.E, -yHidden[j]));
-			}
-			
-			yOutput = 0;
-			
-			for (int j = 0; j < yHidden.length; j++) {
-				yOutput += yHidden[j] * wHiddenOutput[j];
-			}
-			
-			yOutput = 1 / (1 + Math.pow(Math.E, -yOutput));
-			
-			System.out.println(yInput[0] + "\t" + yInput[1] + "\t" + yOutput);
+			yHidden[i] = sigmoid(yHidden[i]);
 		}
 		
-		System.exit(status);
+		for (int i = 0; i < yOutput.length; i++) {
+			yOutput[i] = 0;
+			
+			for (int j = 0; j < yHidden.length; j++) {
+				yOutput[i] += yHidden[j] * wHiddenOutput[j][i];
+			}
+			
+			yOutput[i] = sigmoid(yOutput[i]);
+		}
+		
+		return yOutput;
+	}
+	
+	public double getMse() {
+		return mse;
+	}
+	
+	private double sigmoid(double x) {
+		return 1 / (1 + Math.pow(Math.E, -x));
+	}
+	
+	private double dsigmoid(double x) {
+		return x * (1 - x);
 	}
 }
