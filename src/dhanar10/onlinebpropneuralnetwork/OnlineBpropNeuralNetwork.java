@@ -19,7 +19,7 @@ public class OnlineBpropNeuralNetwork {
 		System.out.println();
 		
 		for (int i = 0; i < data.length; i++) {
-			double output[] = bprop.compute(data[i]);
+			double output[] = bprop.calculate(data[i]);
 			
 			for (int j = 0; j < data[i].length - output.length; j++) {
 				System.out.printf("%.2f%s", data[i][j], "\t");
@@ -36,12 +36,12 @@ public class OnlineBpropNeuralNetwork {
 	}
 	
 	public OnlineBpropNeuralNetwork(int input, int hidden, int output) {
-		yInput = new double[input];
-		yHidden = new double[hidden];
+		yInput = new double[input + 1];
+		yHidden = new double[hidden + 1];
 		yOutput = new double[output];
 		
-		wInputHidden = new double[input][hidden];
-		wHiddenOutput = new double[hidden][output];
+		wInputHidden = new double[yInput.length][yHidden.length];
+		wHiddenOutput = new double[yHidden.length][yOutput.length];
 	}
 	
 	public boolean train(double data[][], double learningRate, double targetMse, double maxEpoch) {
@@ -73,15 +73,37 @@ public class OnlineBpropNeuralNetwork {
 				double eOutput[] = new double[yOutput.length];
 				
 				for (int i = 0; i < d.length; i++) {
-					if (i < yInput.length) {
+					if (i < yInput.length - 1) {
 						yInput[i] = d[i];
 					}
 					else {
-						yTarget[i - yInput.length] = d[i];
+						yTarget[i - (yInput.length - 1)] = d[i];
 					}
 				}
 				
-				this.compute(yInput);
+				yInput[yInput.length - 1] = 1;
+				
+				for (int i = 0; i < yHidden.length - 1; i++) {
+					yHidden[i] = 0;
+					
+					for (int j = 0; j < yInput.length; j++) {
+						yHidden[i] += yInput[j] * wInputHidden[j][i];
+					}
+					
+					yHidden[i] = sigmoid(yHidden[i]);
+				}
+				
+				yHidden[yHidden.length - 1] = 1;
+				
+				for (int i = 0; i < yOutput.length; i++) {
+					yOutput[i] = 0;
+					
+					for (int j = 0; j < yHidden.length; j++) {
+						yOutput[i] += yHidden[j] * wHiddenOutput[j][i];
+					}
+					
+					yOutput[i] = sigmoid(yOutput[i]);
+				}
 				
 				for (int i = 0; i < yOutput.length; i++) {
 					eOutput[i] = (yTarget[i] - yOutput[i]) * dsigmoid(yOutput[i]);
@@ -129,12 +151,14 @@ public class OnlineBpropNeuralNetwork {
 		return success;
 	}
 	
-	public double[] compute(double input[]) {
-		for (int i = 0; i < yInput.length; i++) {
+	public double[] calculate(double input[]) {
+		for (int i = 0; i < yInput.length - 1; i++) {
 			yInput[i] = input[i];
 		}
 		
-		for (int i = 0; i < yHidden.length; i++) {
+		yInput[yInput.length - 1] = 1;
+		
+		for (int i = 0; i < yHidden.length - 1; i++) {
 			yHidden[i] = 0;
 			
 			for (int j = 0; j < yInput.length; j++) {
@@ -143,6 +167,8 @@ public class OnlineBpropNeuralNetwork {
 			
 			yHidden[i] = sigmoid(yHidden[i]);
 		}
+		
+		yHidden[yHidden.length - 1] = 1;
 		
 		for (int i = 0; i < yOutput.length; i++) {
 			yOutput[i] = 0;
